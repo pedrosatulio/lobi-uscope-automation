@@ -5,16 +5,19 @@
 
 Lobi LobiDevice;                        // Lobi class
 
-// Global variables
+// Global variables and flags
+byte zAxisButton;                       // Focus (z-axis) stepper motor control flag (button)
+byte zAxisKeyboard;                     // Focus (z-axis) stepper motor control flag (keyboard)
 uint32_t samplingTimeOut;               // Timing variable for sampling period
 
 
 // Main functions
-bool zAxisDirection();                  // Monitors focus (z-axis) direction switch
+byte zAxisDirection();                  // Monitors focus (z-axis) direction switch
 void updateStatus();                    // Update and print loop state
 
 
 // RTOS Tasks
+void keyboardControl(void *parameter);  // Control device functionalities from keyboard commands
 void zAxisStep(void *parameter);        // Focus (z-axis) control thread
 
 
@@ -35,9 +38,20 @@ void setup()
   pinMode(ZIN, INPUT);
 
   // Initializing flags and variables
+  zAxisButton = false;
+  zAxisKeyboard = false;
   samplingTimeOut = 0;
 
   // Initializing RTOS tasks
+  xTaskCreate(
+    keyboardControl,                    // Function that should be called
+    "Keyboard command",                 // Name of the task (for debugging)
+    128,                                // Stack size (bytes)
+    NULL,                               // Parameter to pass
+    1,                                  // Task priority
+    NULL                                // Task handle
+  );
+  
   xTaskCreate(
     zAxisStep,                          // Function that should be called
     "z-axis step",                      // Name of the task (for debugging)
@@ -68,7 +82,7 @@ void loop()
 
 
 /****************** MAIN FUNCTIONS *******************/
-bool zAxisDirection()
+byte zAxisDirection()
 {
   if (digitalRead(ZDIR))
   {
@@ -82,6 +96,8 @@ bool zAxisDirection()
 
 void updateStatus()
 {
+  //
+
   #ifdef DEBUG_PRINTS
     //
   #endif
@@ -89,13 +105,56 @@ void updateStatus()
 
 
 /********************* RTOS TASKS ********************/
-void zAxisStep(void *parameter)
+void keyboardControl(void *parameter)
 {
+  byte posStepCompleted = true;
+  byte negStepCompleted = true;
+
+  char rxKey;
+
   while (true)
   {
-    if (digitalRead(ZIN) == HIGH)
+    rxKey = LobiDevice.keyboardRx();
+
+    if (!zAxisButton)
     {
-      LobiDevice.motorStep(zAxisDirection());
+      zAxisKeyboard = true;
+
+      if (rxKey == 'w' || !posStepCompleted)
+      {
+        posStepCompleted = LobiDevice.motorStep(POS);
+      }
+      else if (rxKey == 's' || !negStepCompleted)
+      {
+        negStepCompleted = LobiDevice.motorStep(NEG);
+      }
+      else
+      {
+        zAxisKeyboard = false;
+      }
+    }
+
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+  }
+}
+
+void zAxisStep(void *parameter)
+{
+  byte stepCompleted = true;
+
+  while (true)
+  {
+    if (!zAxisKeyboard)
+    {
+      zAxisButton = true;
+      if (digitalRead(ZIN) == HIGH || !stepCompleted)
+      {
+        stepCompleted = LobiDevice.motorStep(zAxisDirection());
+      }
+      else
+      {
+        zAxisButton = false;
+      }
     }
 
     vTaskDelay(50 / portTICK_PERIOD_MS);

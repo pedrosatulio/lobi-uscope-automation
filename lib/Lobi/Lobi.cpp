@@ -19,13 +19,14 @@
 
 #include "Lobi.h"
 
+byte stepCompleted = false;      // Monitors if full step was performed (flag)
 uint8_t stepperPos = 0x01;       // Stepper motor position
 
 Lobi::Lobi()
 {
 }
 
-void Lobi::motorStep(byte direction)
+byte Lobi::motorStep(byte direction)
 {
    #ifdef DEBUG_PRINTS
       if (stepperPos == 0x01 || stepperPos == 0x08)
@@ -74,17 +75,46 @@ void Lobi::motorStep(byte direction)
       {
          if (stepperPos == 0x08)
          {
+            stepCompleted = true;
             Serial.println("Foward step completed.");
             Serial.println("");
+         }
+         else
+         {
+            stepCompleted = false;
          }
       }
       else
       {
          if (stepperPos == 0x01)
          {
+            stepCompleted = true;
             Serial.println("Backward step completed.");
             Serial.println("");
          }
+         else
+         {
+            stepCompleted = false;
+         }
       }
    #endif
+
+   return stepCompleted;
+}
+
+char Lobi::keyboardRx()
+{
+   if (Serial.available() > 0)
+   {
+      return Serial.read();
+   }
+   else
+   {
+      return '\0';
+   }
+}
+
+void Lobi::stringRx(char *rxMessage)
+{
+   //
 }

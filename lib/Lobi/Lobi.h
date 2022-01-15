@@ -43,13 +43,17 @@
 
 class Lobi
 {
-public:
-    Lobi();
+    public:
+        Lobi();
 
-    // Stepper motor methods
-    void    motorStep(byte direction);      // Single step
+        // Stepper motor methods
+        byte    motorStep(byte direction);      // Produces a single step in motor
 
-private:
+        // Communication methods
+        char    keyboardRx();                   // Reads incoming keyboard control keys from serial
+        void    stringRx(char *rxMessage);      // Reads incoming string from serial (automatic features)
+
+    private:
 };
 
 #endif /* LOBI_H */
