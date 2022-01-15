@@ -24,6 +24,7 @@
 #define LOBI_H
 
 #include <Arduino.h>
+#include <Arduino_FreeRTOS.h>
 
 /************* LOBI DEVICE INFORMATION ***************/
 #define DEBUG_PRINTS                        // Show serial prints for debugging (comment to disable)
@@ -32,11 +33,13 @@
 #define NEG             0                   // Stepper motor backward direction (anticlockwise)
 
 /******************* ARDUINO PINS *********************/
-#define ZIN             3                   // D3 (z-axis button interrupt pin)
+#define LED             3                   // D3 (Green LED test)
 #define IN1             4                   // D4 (Step motor pin 1)
 #define IN2             5                   // D5 (Step motor pin 2)
 #define IN3             6                   // D6 (Step motor pin 3)
 #define IN4             7                   // D7 (Step motor pin 4)
+#define ZDIR            12                  // D12 (z-axis switch direction button pin)
+#define ZIN             13                  // D13 (z-axis trigger button pin)
 
 class Lobi
 {
