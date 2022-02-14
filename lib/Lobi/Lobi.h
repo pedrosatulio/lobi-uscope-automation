@@ -30,7 +30,7 @@
 #include <Arduino_FreeRTOS.h>
 
 /************* LOBI DEVICE INFORMATION ***************/
-#define MOTOR_HEAD                            // Choose LED_HEAD or MOTOR_HEAD
+#define LED_HEAD                            // Choose LED_HEAD or MOTOR_HEAD
 //#define DEBUG_PRINTS                        // Show serial prints for debugging (comment to disable)
 #define SAMPLING_PERIOD     250             // Sampling period (ms)
 #define LCD_I2C_ADDR        0xFF            // LCD module I2C device address
