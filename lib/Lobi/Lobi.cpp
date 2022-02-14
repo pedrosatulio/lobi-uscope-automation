@@ -19,102 +19,117 @@
 
 #include "Lobi.h"
 
-byte stepCompleted = false;      // Monitors if full step was performed (flag)
-uint8_t stepperPos = 0x01;       // Stepper motor position
+// x-axis and y-axis stepper sequence
+uint8_t xStepperVec[8] = {0x01, 0x03, 0x02, 0x06, 0x04, 0x0C, 0x08, 0x09};      
+uint8_t yStepperVec[8] = {0x01, 0x03, 0x02, 0x06, 0x04, 0x0C, 0x08, 0x09};
+
+uint8_t xStepperPos = 0;      // x-axis Stepper motor stepper vector position
+uint8_t yStepperPos = 0;      // y-axis Stepper motor stepper vector position
 
 Lobi::Lobi()
 {
 }
 
-byte Lobi::motorStep(byte direction)
-{
-   #ifdef DEBUG_PRINTS
-      if (stepperPos == 0x01 || stepperPos == 0x08)
-      {
-         Serial.println("");
-         Serial.println("Starting new step...");
-      }
-   #endif
-
-   digitalWrite(IN1, stepperPos & 0x01);
-   digitalWrite(IN2, (stepperPos >> 1) & 0x01);
-   digitalWrite(IN3, (stepperPos >> 2) & 0x01);
-   digitalWrite(IN4, (stepperPos >> 3) & 0x01);
-
-   if (direction)
+#ifdef LED_HEAD
+   char Lobi::keyboardRx()
    {
-      if (stepperPos == 0x08)
+      if (Serial.available() > 0)
       {
-         stepperPos = 0x01;
+         return Serial.read();
       }
       else
       {
-         stepperPos = stepperPos << 1;
-      }
-   }
-   else
-   {
-      if (stepperPos == 0x01)
-      {
-         stepperPos = 0x08;
-      }
-      else
-      {
-         stepperPos = stepperPos >> 1;
+         return '\0';
       }
    }
 
-   #ifdef DEBUG_PRINTS
-      Serial.print("Switching stepper motor:\t");
-      Serial.print(stepperPos & 0x01);
-      Serial.print((stepperPos >> 1) & 0x01);
-      Serial.print((stepperPos >> 2) & 0x01);
-      Serial.println((stepperPos >> 3) & 0x01);
-   
-      if (direction)
+   void Lobi::stringRx(char *rxMessage)
+   {
+      //
+   }
+#endif
+
+#ifdef MOTOR_HEAD
+   void Lobi::xAxisMotorStep(uint8_t state)
+   {
+      digitalWrite(XIN1, xStepperVec[xStepperPos] & 0x01);
+      digitalWrite(XIN2, (xStepperVec[xStepperPos] >> 1) & 0x01);
+      digitalWrite(XIN3, (xStepperVec[xStepperPos] >> 2) & 0x01);
+      digitalWrite(XIN4, (xStepperVec[xStepperPos] >> 3) & 0x01);
+
+      if (state == 2)
       {
-         if (stepperPos == 0x08)
+         if (xStepperPos == 7)
          {
-            stepCompleted = true;
-            Serial.println("Foward step completed.");
-            Serial.println("");
+            xStepperPos = 0;
          }
          else
          {
-            stepCompleted = false;
+            xStepperPos++;
          }
       }
-      else
+      
+      if (state == 1)
       {
-         if (stepperPos == 0x01)
+         if (xStepperPos == 0)
          {
-            stepCompleted = true;
-            Serial.println("Backward step completed.");
-            Serial.println("");
+            xStepperPos = 7;
          }
          else
          {
-            stepCompleted = false;
+            xStepperPos--;
          }
       }
-   #endif
-
-   return stepCompleted;
-}
-
-char Lobi::keyboardRx()
-{
-   if (Serial.available() > 0)
-   {
-      return Serial.read();
    }
-   else
-   {
-      return '\0';
-   }
-}
 
-void Lobi::stringRx(char *rxMessage)
-{
-   //
-}
+   void Lobi::yAxisMotorStep(uint8_t state)
+   {
+      digitalWrite(YIN1, yStepperVec[yStepperPos] & 0x01);
+      digitalWrite(YIN2, (yStepperVec[yStepperPos] >> 1) & 0x01);
+      digitalWrite(YIN3, (yStepperVec[yStepperPos] >> 2) & 0x01);
+      digitalWrite(YIN4, (yStepperVec[yStepperPos] >> 3) & 0x01);
+
+      if (state == 2)
+      {
+         if (yStepperPos == 7)
+         {
+            yStepperPos = 0;
+         }
+         else
+         {
+            yStepperPos++;
+         }
+      }
+      
+      if (state == 1)
+      {
+         if (yStepperPos == 0)
+         {
+            yStepperPos = 7;
+         }
+         else
+         {
+            yStepperPos--;
+         }
+      }
+   }
+
+   void Lobi::zAxisMotorCtrl(uint8_t state)
+   {
+      if (state == 2)
+      {
+         digitalWrite(ZIN1, LOW);
+         digitalWrite(ZIN2, HIGH);
+      }
+      else if (state == 1)
+      {
+         digitalWrite(ZIN1, HIGH);
+         digitalWrite(ZIN2, LOW);
+      }
+      else
+      {
+         digitalWrite(ZIN1, LOW);
+         digitalWrite(ZIN2, LOW);
+      }
+   }
+#endif
