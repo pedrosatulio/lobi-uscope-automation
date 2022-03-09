@@ -1,4 +1,5 @@
 /* 
+
   This class contains LOBI device methods
 
   Public methods:
@@ -13,15 +14,13 @@
      
      LOBI - Laboratório de Óptica Biomédica e Imagens
      Date: January 14th, 2022
-
  
 */
 
 #include "Lobi.h"
 
-// x-axis and y-axis stepper sequence
-uint8_t xStepperVec[8] = {0x01, 0x03, 0x02, 0x06, 0x04, 0x0C, 0x08, 0x09};      
-uint8_t yStepperVec[8] = {0x01, 0x03, 0x02, 0x06, 0x04, 0x0C, 0x08, 0x09};
+// Stepper motor sequence
+uint8_t stepperVec[8] = {0x1, 0x3, 0x2, 0x6, 0x4, 0xC, 0x8, 0x9};      
 
 uint8_t xStepperPos = 0;      // x-axis Stepper motor stepper vector position
 uint8_t yStepperPos = 0;      // y-axis Stepper motor stepper vector position
@@ -43,19 +42,26 @@ Lobi::Lobi()
       }
    }
 
-   void Lobi::stringRx(char *rxMessage)
+   int Lobi::intensityRx()
    {
-      //
+      if (Serial.available() > 0)
+      {
+         return Serial.parseInt();
+      }
+      else
+      {
+         return -1;
+      }
    }
 #endif
 
 #ifdef MOTOR_HEAD
    void Lobi::xAxisMotorStep(uint8_t state)
    {
-      digitalWrite(XIN1, xStepperVec[xStepperPos] & 0x01);
-      digitalWrite(XIN2, (xStepperVec[xStepperPos] >> 1) & 0x01);
-      digitalWrite(XIN3, (xStepperVec[xStepperPos] >> 2) & 0x01);
-      digitalWrite(XIN4, (xStepperVec[xStepperPos] >> 3) & 0x01);
+      digitalWrite(XIN1, stepperVec[xStepperPos] & 0x01);
+      digitalWrite(XIN2, (stepperVec[xStepperPos] >> 1) & 0x01);
+      digitalWrite(XIN3, (stepperVec[xStepperPos] >> 2) & 0x01);
+      digitalWrite(XIN4, (stepperVec[xStepperPos] >> 3) & 0x01);
 
       if (state == 2)
       {
@@ -84,10 +90,10 @@ Lobi::Lobi()
 
    void Lobi::yAxisMotorStep(uint8_t state)
    {
-      digitalWrite(YIN1, yStepperVec[yStepperPos] & 0x01);
-      digitalWrite(YIN2, (yStepperVec[yStepperPos] >> 1) & 0x01);
-      digitalWrite(YIN3, (yStepperVec[yStepperPos] >> 2) & 0x01);
-      digitalWrite(YIN4, (yStepperVec[yStepperPos] >> 3) & 0x01);
+      digitalWrite(YIN1, stepperVec[yStepperPos] & 0x01);
+      digitalWrite(YIN2, (stepperVec[yStepperPos] >> 1) & 0x01);
+      digitalWrite(YIN3, (stepperVec[yStepperPos] >> 2) & 0x01);
+      digitalWrite(YIN4, (stepperVec[yStepperPos] >> 3) & 0x01);
 
       if (state == 2)
       {

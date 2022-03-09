@@ -28,12 +28,13 @@
 
 #include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
+#include <Wire.h>
 
 /************* LOBI DEVICE INFORMATION ***************/
-#define LED_HEAD                            // Choose LED_HEAD or MOTOR_HEAD
-//#define DEBUG_PRINTS                        // Show serial prints for debugging (comment to disable)
+#define MOTOR_HEAD                            // Choose LED_HEAD or MOTOR_HEAD
+//#define DEBUG_PRINTS                      // Show serial prints for debugging (comment to disable)
 #define SAMPLING_PERIOD     250             // Sampling period (ms)
-#define LCD_I2C_ADDR        0xFF            // LCD module I2C device address
+#define LCD_I2C_ADDR        0x27            // LCD module I2C device address
 #ifdef LED_HEAD
     #define WHITE_LED_THRS  110             // Maximum PWM value for white LEDs (20mA)
     #define IR_LED_THRS     240             // Maximum PWM value for infrared LEDs (100mA)
@@ -47,8 +48,8 @@
 #endif
 
 /******************* ARDUINO PINS *********************/
-#define SDA                 A4              // I2C SDA pin (interboard comm)
-#define SCL                 A5              // I2C SCL pin (interboard comm)
+#define SDA                 A4              // I2C SDA pin (interboard comm) - pullup required
+#define SCL                 A5              // I2C SCL pin (interboard comm) - pullup required
 #ifdef LED_HEAD
     #define WHITE_LED_PIN   5               // D5 (White LED PWM output pin - 980 Hz)
     #define IR_LED_PIN      6               // D6 (Infrared LED PWM output pin - 980 Hz)
@@ -92,10 +93,11 @@ class Lobi
         Lobi();
 
         #ifdef LED_HEAD
-            // USB communication methods
+            // Communication methods
             char    keyboardRx();                       // Reads incoming keyboard control keys from serial
-            void    stringRx(char *rxMessage);          // Reads incoming string from serial (automatic features)
+            int     intensityRx();                      // Reads incoming interger from serial for PWM control
         #endif
+        
         #ifdef MOTOR_HEAD
             // Stepper motor methods
             void    xAxisMotorStep(uint8_t state);      // Produces a single step in motor
@@ -104,11 +106,6 @@ class Lobi
             // DC motor methods
             void    zAxisMotorCtrl(uint8_t state);      // Produces a single step in motor
         #endif
-
-        // I2C communication methods
-        void I2CInitialization();                       // Initializes I2C bus
-        void I2CWrite(String txMessage);                // Sends data string secondary module
-        String I2CRead(char *rxMessage, int curr_addr); // Receives char sent by secondary module
 
         private:
 };

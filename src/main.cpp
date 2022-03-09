@@ -1,23 +1,22 @@
 // Automation of LOBI's Eclipse TE2000 Inverted Microscope
 
 #include "Lobi.h"
-Lobi LobiDevice;                        // Lobi class
-
+Lobi LobiDevice;                          // Lobi class
 
 // Global variables and flags
+byte      manualControl;                  // Manual control flag (buttons and joystick)
+byte      computerizedControl;            // Computerized control flag (keyboard)
+uint32_t  samplingTimeOut;                // Timing variable for sampling period
 #ifdef LED_HEAD
-  //
+  uint32_t whitePWM;                      // Current white LED PWM value
+  uint32_t infraredPWM;                   // Current infrared LED PWM value
 #endif
-#ifdef MOTOR_HEAD
-  //
-#endif
-byte      manualControl;                // Manual control flag (buttons and joystick)
-byte      computerizedControl;          // Computerized control flag (keyboard)
-uint32_t  samplingTimeOut;              // Timing variable for sampling period
 
 // Main functions
-void updateStatus();                    // Update and print loop state
-
+void updateStatus();                      // Update and print loop state
+#ifdef MOTOR_HEAD
+  void receiveEvent();                    // Reads incoming control via I2C
+#endif
 
 // RTOS Tasks
 #ifdef LED_HEAD
@@ -32,11 +31,20 @@ void updateStatus();                    // Update and print loop state
 
 void setup()
 {
+  // Initializing I2C bus
+  Wire.begin(I2C_ADDR);
+
   #ifdef LED_HEAD
     Serial.begin(9600);
+
+    // Initializing LED controls
+    whitePWM = 0;
+    infraredPWM = 0;
   #endif
 
   #ifdef MOTOR_HEAD
+    Wire.onReceive(receiveEvent);
+
     // Initializing x-axis stepper motor pins
     pinMode(XIN1, OUTPUT);
     pinMode(XIN2, OUTPUT);
@@ -58,12 +66,11 @@ void setup()
     pinMode(YPOT, INPUT);
     pinMode(ZNEG, INPUT);
     pinMode(ZPOS, INPUT);
-
-    // Initializing flags and variables
-    manualControl = false;
-    computerizedControl = false;
   #endif
 
+  // Initializing flags and variables
+  manualControl = false;
+  computerizedControl = false;
   samplingTimeOut = 0;
 
   // Initializing RTOS tasks
@@ -137,13 +144,59 @@ void updateStatus()
   #endif
 }
 
+#ifdef MOTOR_HEAD
+  void receiveEvent(int howMany)
+  {
+    char rxKey;
+
+    rxKey = Wire.read();
+
+    if (!manualControl)
+    {
+      computerizedControl = true;
+      LobiDevice.zAxisMotorCtrl(STOP);
+
+      if (rxKey == 'd')
+      {
+        LobiDevice.xAxisMotorStep(FORWARD);
+      }
+      else if (rxKey == 'a')
+      {
+        LobiDevice.xAxisMotorStep(BACKWARD);
+      }
+      else if (rxKey == 'w')
+      {
+        LobiDevice.yAxisMotorStep(FORWARD);
+      }
+      else if (rxKey == 's')
+      {
+        LobiDevice.yAxisMotorStep(BACKWARD);
+      }
+      else if (rxKey == '+')
+      {
+        LobiDevice.zAxisMotorCtrl(FORWARD);
+      }
+      else if (rxKey == '-')
+      {
+        LobiDevice.zAxisMotorCtrl(BACKWARD);
+      }
+      else
+      {
+        computerizedControl = false;
+      }
+    }
+  }
+#endif
+
 
 /********************* RTOS TASKS ********************/
 #ifdef LED_HEAD
   void keyboardControl(void *parameter)
   {
+    int temp = 0;
     char rxKey;
     char ledFlag = '\0';
+
 
     while (true)
     {
@@ -154,39 +207,49 @@ void updateStatus()
         if (!manualControl)
         {
           computerizedControl = true;
-          LobiDevice.zAxisMotorCtrl(STOP);
-
-          if (rxKey == 'd')
-          {
-            LobiDevice.xAxisMotorStep(FORWARD);
-          }
-          else if (rxKey == 'a')
-          {
-            LobiDevice.xAxisMotorStep(BACKWARD);
-          }
-          else if (rxKey == 'w')
-          {
-            LobiDevice.yAxisMotorStep(FORWARD);
-          }
-          else if (rxKey == 's')
-          {
-            LobiDevice.yAxisMotorStep(BACKWARD);
-          }
-          else if (rxKey == '+')
-          {
-            LobiDevice.zAxisMotorCtrl(FORWARD);
-          }
-          else if (rxKey == '-')
-          {
-            LobiDevice.zAxisMotorCtrl(BACKWARD);
-          }
-          else if (rxKey == 'q')
+          if (rxKey == 'q')
           {
             ledFlag = 'q';
           }
           else if (rxKey == 'e')
           {
             ledFlag = 'e';
+          }
+          else if (rxKey == 'd')
+          {
+            Wire.beginTransmission(0x05);
+            Wire.write('d');
+            Wire.endTransmission();
+          }
+          else if (rxKey == 'a')
+          {
+            Wire.beginTransmission(0x05);
+            Wire.write('a');
+            Wire.endTransmission();
+          }
+          else if (rxKey == 'w')
+          {
+            Wire.beginTransmission(0x05);
+            Wire.write('w');
+            Wire.endTransmission();
+          }
+          else if (rxKey == 's')
+          {
+            Wire.beginTransmission(0x05);
+            Wire.write('s');
+            Wire.endTransmission();
+          }
+          else if (rxKey == '+')
+          {
+            Wire.beginTransmission(0x05);
+            Wire.write('+');
+            Wire.endTransmission();
+          }
+          else if (rxKey == '-')
+          {
+            Wire.beginTransmission(0x05);
+            Wire.write('-');
+            Wire.endTransmission();
           }
           else
           {
@@ -196,32 +259,24 @@ void updateStatus()
       }
       else
       {
+        temp = LobiDevice.intensityRx();
         switch (ledFlag)
         {
           case 'q':
-            if (Serial.available > 0)
+            if (temp > -1)
             {
-              \\pwm_branco = Serial.parseInt();
-            }
-            else
-            {
-              \\pwm_branco = ultimo valor;
+              whitePWM = temp;
             }
             break;
           case 'e':
-            if (Serial.available > 0)
+            if (temp > -1)
             {
-              \\pwm_ir = Serial.parseInt();
-            }
-            else
-            {
-              \\pwm_ir = ultimo valor;
+              infraredPWM = temp;
             }
             break;
         }
       }
       
-
       vTaskDelay(50 / portTICK_PERIOD_MS);
     }
   }
