@@ -14,9 +14,9 @@ uint32_t  samplingTimeOut;                // Timing variable for sampling period
 
 // Main functions
 void updateStatus();                      // Update and print loop state
-#ifdef MOTOR_HEAD
-  void receiveEvent();                    // Reads incoming control via I2C
-#endif
+//#ifdef MOTOR_HEAD
+//  void receiveEvent();                    // Reads incoming control via I2C
+//#endif
 
 // RTOS Tasks
 #ifdef LED_HEAD
@@ -43,7 +43,7 @@ void setup()
   #endif
 
   #ifdef MOTOR_HEAD
-    Wire.onReceive(receiveEvent);
+    //Wire.onReceive(receiveEvent);
 
     // Initializing x-axis stepper motor pins
     pinMode(XIN1, OUTPUT);
@@ -138,7 +138,7 @@ void loop()
 void updateStatus()
 {
   //
-
+  Serial.println("Funciona");
   #ifdef DEBUG_PRINTS
     //
   #endif
